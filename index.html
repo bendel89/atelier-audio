@@ -112,7 +112,7 @@ function hfFetch(url,body,resultId,filename){
 var key=localStorage.getItem('hf_key');
 if(!key){showToast('Entre ton token HF en haut');return;}
 showToast('Génération en cours...');
-fetch(url,{
+fetch('https://corsproxy.io/?'+encodeURIComponent(url),{
 method:'POST',
 headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
 body:JSON.stringify(body)
