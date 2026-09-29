@@ -122,10 +122,10 @@ button.primary:disabled{opacity:0.35;cursor:not-allowed}
 <div class="toast" id="toast">
 <span id="toastText">Message</span>
 </div>
+
 <script>
 function $(id){return document.getElementById(id);}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function log(m){console.log('[Audio] '+m);}
 
 let toastT=null;
@@ -166,13 +166,6 @@ const FISH_API_URL='https://api.fish.audio/v1/tts';
 const HF_MUSIC_URL='https://api-inference.huggingface.co/models/facebook/musicgen-small';
 const HF_SFX_URL='https://api-inference.huggingface.co/models/facebook/audiogen-medium';
 
-const VOICES={
-female_fr:'9d0b6f81d1e54e2b9c2f6c9e0a6c9b1a',
-male_fr:'b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7',
-female_en:'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6',
-male_en:'f1e2d3c4b5a69788695041324354657687'
-};
-
 const state={voice:'female_fr',musicDuration:10};
 
 async function generateVoice(){
@@ -187,7 +180,7 @@ try{
 const res=await fetch(FISH_API_URL,{
 method:'POST',
 headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-body:JSON.stringify({text:text,reference_id:VOICES[state.voice],format:'mp3',mp3_bitrate:128})
+body:JSON.stringify({text:text,format:'mp3',mp3_bitrate:128})
 });
 if(!res.ok){const e=await res.text();throw new Error('HTTP '+res.status);}
 const blob=await res.blob();
@@ -240,7 +233,7 @@ await hfGenerate(HF_SFX_URL,p,400,'sfxResult','effet.wav');
 (function init(){
 initTabs();
 
-$('saveFishKey').addEventListener('click',()=>{
+$('saveFishKey').addEventListener('click',function(){
 const k=$('fishKeyInput').value.trim();
 if(!k){toast('Colle ta clé Fish','error');return;}
 localStorage.setItem('fish_key',k);
@@ -248,7 +241,7 @@ toast('Clé Fish enregistrée ✓');
 $('fishKeyInput').value='';
 });
 
-$('saveHFKey').addEventListener('click',()=>{
+$('saveHFKey').addEventListener('click',function(){
 const k=$('hfKeyInput').value.trim();
 if(!k){toast('Colle ton token HF','error');return;}
 localStorage.setItem('hf_key',k);
@@ -260,11 +253,11 @@ if(getFishKey()){$('fishKeyInput').placeholder='Clé Fish déjà enregistrée �
 if(getHFKey()){$('hfKeyInput').placeholder='Token HF déjà enregistré ✓';}
 
 $('genVoice').addEventListener('click',generateVoice);
-$('voiceSelect').addEventListener('change',e=>{state.voice=e.target.value;});
+$('voiceSelect').addEventListener('change',function(e){state.voice=e.target.value;});
 $('genMusic').addEventListener('click',generateMusic);
-$('musicDuration').addEventListener('change',e=>{state.musicDuration=parseInt(e.target.value,10);});
+$('musicDuration').addEventListener('change',function(e){state.musicDuration=parseInt(e.target.value,10);});
 $('genSong').addEventListener('click',generateSong);
-$('genSfx').addEventListener pop('click',generateSfx);
+$('genSfx').addEventListener('click',generateSfx);
 
 log('Atelier Audio prêt.');
 })();
