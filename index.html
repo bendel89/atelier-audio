@@ -12,7 +12,7 @@ h1{text-align:center;font-size:1.5rem;margin-bottom:0.3rem;background:linear-gra
 .panel{background:#131829;border:1px solid #2a3350;border-radius:12px;padding:1rem;margin-bottom:1rem}
 .lbl{font-size:0.7rem;color:#8892b0;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:0.6rem}
 textarea,input{width:100%;padding:0.85rem;border-radius:10px;border:1px solid #2a3350;background:#1a2036;color:#e8ecf8;font-family:inherit;font-size:0.9rem}
-textarea{min-height:100px;resize:vertical}
+textarea{min-height:100px}
 select{width:100%;padding:0.85rem;border-radius:10px;border:1px solid #2a3350;background:#1a2036;color:#e8ecf8;font-family:inherit;font-size:0.9rem}
 button.primary{width:100%;padding:1rem;border-radius:12px;border:none;background:linear-gradient(135deg,#4a9eff,#7c5cff);color:#fff;font-size:1rem;font-weight:600;font-family:inherit;cursor:pointer;margin-bottom:1rem}
 button.primary:disabled{opacity:0.35}
@@ -34,14 +34,13 @@ button.primary:disabled{opacity:0.35}
 <p class="sub">Voix · Musique · Chanson · Effets</p>
 
 <div class="panel">
-<div class="lbl">🔑 Clés API</div>
-<input type="password" id="fishKey" placeholder="Clé Fish Audio (sk-fish-...)">
-<input type="password" id="hfKey" placeholder="Token Hugging Face (hf_...)" style="margin-top:0.5rem">
+<div class="lbl">🔑 Token Hugging Face</div>
+<input type="password" id="hfKey" placeholder="hf_...">
 <div style="font-size:0.7rem;color:#6ee7a3;margin-top:0.5rem">✓ Enregistrement automatique</div>
 </div>
 
 <div class="tabs">
-<button class="tab active" data-mod="voice">🎤 Voix off</button>
+<button class="tab active" data-mod="voice">🎤 Voix</button>
 <button class="tab" data-mod="music">🎵 Musique</button>
 <button class="tab" data-mod="song">🎙️ Chanson</button>
 <button class="tab" data-mod="sfx">🔊 Effets</button>
@@ -52,14 +51,7 @@ button.primary:disabled{opacity:0.35}
 <div class="lbl">🎤 Texte à lire</div>
 <textarea id="voiceText" placeholder="Écris ici le texte à lire"></textarea>
 </div>
-<div class="panel">
-<div class="lbl">🎭 Voix</div>
-<select id="voiceSelect">
-<option value="female_fr">Féminine française</option>
-<option value="male_fr">Masculine française</option>
-</select>
-</div>
-<button class="primary" onclick="generateVoice()">Générer la voix</button>
+<button class="primary" id="btnVoice">Générer la voix</button>
 <div id="voiceResult"></div>
 </div>
 
@@ -68,11 +60,7 @@ button.primary:disabled{opacity:0.35}
 <div class="lbl">🎵 Décris ta musique</div>
 <textarea id="musicPrompt" placeholder="Exemples : hip-hop disco funky"></textarea>
 </div>
-<div class="panel">
-<div class="lbl">⏱️ Durée (secondes)</div>
-<input type="number" id="musicDur" value="10" min="3" max="30">
-</div>
-<button class="primary" onclick="generateMusic()">Générer la musique</button>
+<button class="primary" id="btnMusic">Générer la musique</button>
 <div id="musicResult"></div>
 </div>
 
@@ -81,7 +69,7 @@ button.primary:disabled{opacity:0.35}
 <div class="lbl">🎙️ Paroles</div>
 <textarea id="songLyrics" placeholder="Écris les paroles"></textarea>
 </div>
-<button class="primary" onclick="generateSong()">Générer la chanson</button>
+<button class="primary" id="btnSong">Générer la chanson</button>
 <div id="songResult"></div>
 </div>
 
@@ -90,7 +78,7 @@ button.primary:disabled{opacity:0.35}
 <div class="lbl">🔊 Décris l'effet</div>
 <textarea id="sfxPrompt" placeholder="Exemples : pluie battante"></textarea>
 </div>
-<button class="primary" onclick="generateSfx()">Générer l'effet</button>
+<button class="primary" id="btnSfx">Générer l'effet</button>
 <div id="sfxResult"></div>
 </div>
 
@@ -102,16 +90,11 @@ function showToast(msg){
 var t=$('toast');
 t.textContent=msg;
 t.classList.add('visible');
-setTimeout(function(){t.classList.remove('visible');},2500);
+setTimeout(function(){t.classList.remove('visible');},3000);
 }
 
-var fishInput=$('fishKey');
 var hfInput=$('hfKey');
-fishInput.value=localStorage.getItem('fish_key')||'';
 hfInput.value=localStorage.getItem('hf_key')||'';
-fishInput.addEventListener('input',function(){
-localStorage.setItem('fish_key',fishInput.value.trim());
-});
 hfInput.addEventListener('input',function(){
 localStorage.setItem('hf_key',hfInput.value.trim());
 });
@@ -125,40 +108,17 @@ $('mod-'+tab.dataset.mod).classList.add('active');
 });
 });
 
-function generateVoice(){
-var text=$('voiceText').value.trim();
-if(!text){showToast('Écris un texte');return;}
-var key=localStorage.getItem('fish_key');
-if(!key){showToast('Entre ta clé Fish en haut');return;}
-showToast('Génération...');
-fetch('https://api.fish.audio/v1/tts',{
-method:'POST',
-headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-body:JSON.stringify({text:text,format:'mp3'})
-})
-.then(function(r){
-if(!r.ok)throw new Error('Erreur '+r.status);
-return r.blob();
-})
-.then(function(blob){
-var url=URL.createObjectURL(blob);
-$('voiceResult').innerHTML='<div class="audio-result"><audio controls src="'+url+'"></audio><a href="'+url+'" download="voix.mp3">⬇️ Télécharger</a></div>';
-showToast('Voix générée ✓');
-})
-.catch(function(e){showToast('Erreur : '+e.message);});
-}
-
-function hfGen(url,prompt,tokens,resultId,filename){
+function hfFetch(url,body,resultId,filename){
 var key=localStorage.getItem('hf_key');
 if(!key){showToast('Entre ton token HF en haut');return;}
-showToast('Génération...');
+showToast('Génération en cours...');
 fetch(url,{
 method:'POST',
 headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-body:JSON.stringify({inputs:prompt,parameters:{max_new_tokens:tokens}})
+body:JSON.stringify(body)
 })
 .then(function(r){
-if(!r.ok)throw new Error('Erreur '+r.status);
+if(!r.ok){return r.text().then(function(t){throw new Error(r.status+': '+t.slice(0,100));});}
 return r.blob();
 })
 .then(function(blob){
@@ -169,24 +129,29 @@ showToast('Généré ✓');
 .catch(function(e){showToast('Erreur : '+e.message);});
 }
 
-function generateMusic(){
+$('btnVoice').addEventListener('click',function(){
+var text=$('voiceText').value.trim();
+if(!text){showToast('Écris un texte');return;}
+hfFetch('https://api-inference.huggingface.co/models/facebook/mms-tts-fra',{inputs:text},'voiceResult','voix.wav');
+});
+
+$('btnMusic').addEventListener('click',function(){
 var p=$('musicPrompt').value.trim();
 if(!p){showToast('Décris ta musique');return;}
-var d=parseInt($('musicDur').value,10)||10;
-hfGen('https://api-inference.huggingface.co/models/facebook/musicgen-small',p,d*50,'musicResult','musique.wav');
-}
+hfFetch('https://api-inference.huggingface.co/models/facebook/musicgen-small',{inputs:p,parameters:{max_new_tokens:250}},'musicResult','musique.wav');
+});
 
-function generateSong(){
+$('btnSong').addEventListener('click',function(){
 var l=$('songLyrics').value.trim();
 if(!l){showToast('Écris des paroles');return;}
-hfGen('https://api-inference.huggingface.co/models/facebook/musicgen-small',l,800,'songResult','chanson.wav');
-}
+hfFetch('https://api-inference.huggingface.co/models/facebook/musicgen-small',{inputs:l,parameters:{max_new_tokens:400}},'songResult','chanson.wav');
+});
 
-function generateSfx(){
+$('btnSfx').addEventListener('click',function(){
 var p=$('sfxPrompt').value.trim();
 if(!p){showToast('Décris l\'effet');return;}
-hfGen('https://api-inference.huggingface.co/models/facebook/audiogen-medium',p,400,'sfxResult','effet.wav');
-}
+hfFetch('https://api-inference.huggingface.co/models/facebook/audiogen-medium',{inputs:p,parameters:{max_new_tokens:200}},'sfxResult','effet.wav');
+});
 </script>
 </body>
 </html>
