@@ -6,183 +6,131 @@
 <title>Atelier Audio</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,sans-serif;background:#0a0e1a;color:#e8ecf8;min-height:100vh;padding:1rem 1rem 6rem;font-size:15px;line-height:1.5;max-width:900px;margin:0 auto}
+body{font-family:-apple-system,sans-serif;background:#0a0e1a;color:#e8ecf8;min-height:100vh;padding:1rem;font-size:15px;line-height:1.5;max-width:900px;margin:0 auto}
 h1{text-align:center;font-size:1.5rem;margin-bottom:0.3rem;background:linear-gradient(135deg,#4a9eff,#7c5cff,#d94aff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .sub{text-align:center;font-size:0.82rem;color:#8892b0;margin-bottom:1rem}
 .panel{background:#131829;border:1px solid #2a3350;border-radius:12px;padding:1rem;margin-bottom:1rem}
-.panel.ok{border-color:#2d8a4e}
 .lbl{font-size:0.7rem;color:#8892b0;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:0.6rem}
 textarea,input{width:100%;padding:0.85rem;border-radius:10px;border:1px solid #2a3350;background:#1a2036;color:#e8ecf8;font-family:inherit;font-size:0.9rem}
 textarea{min-height:100px}
-select{width:100%;padding:0.85rem;border-radius:10px;border:1px solid #2a3350;background:#1a2036;color:#e8ecf8;font-family:inherit;font-size:0.9rem}
 button.primary{width:100%;padding:1rem;border-radius:12px;border:none;background:linear-gradient(135deg,#4a9eff,#7c5cff);color:#fff;font-size:1rem;font-weight:600;font-family:inherit;cursor:pointer;margin-bottom:1rem}
 button.primary:disabled{opacity:0.35}
-.tabs{display:flex;gap:0.3rem;background:#131829;border:1px solid #2a3350;border-radius:12px;padding:0.3rem;margin-bottom:1rem}
-.tab{flex:1;padding:0.7rem;border-radius:9px;background:transparent;color:#8892b0;border:none;font-family:inherit;font-size:0.72rem;font-weight:600;cursor:pointer}
-.tab.active{background:linear-gradient(135deg,#4a9eff,#7c5cff);color:#fff}
-.module{display:none}
-.module.active{display:block}
-.audio-result{margin-top:1rem;padding:1rem;background:#131829;border:1px solid #2d8a4e;border-radius:12px}
-.audio-result audio{width:100%;margin-bottom:0.5rem}
-.audio-result a{color:#4a9eff;text-decoration:underline;font-size:0.8rem}
-.toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%);background:#2d8a4e;color:#fff;padding:0.9rem 1.4rem;border-radius:12px;font-size:0.85rem;z-index:1000;display:none;max-width:90vw;text-align:center}
-.toast.error{background:#c0392b}
-.toast.visible{display:block}
-.status{font-size:0.72rem;color:#6ee7a3;margin-top:0.5rem}
+.result{margin-top:1rem;padding:1rem;background:#131829;border:1px solid #2d8a4e;border-radius:12px}
+.result audio{width:100%}
+.result a{color:#4a9eff;font-size:0.8rem}
+.msg{position:fixed;top:1rem;left:50%;transform:translateX(-50%);background:#131829;color:#fff;padding:0.9rem 1.4rem;border-radius:12px;font-size:0.85rem;border:1px solid #2a3350;z-index:1000;max-width:90vw;text-align:center;display:none}
+.msg.ok{border-color:#2d8a4e}
+.msg.err{border-color:#c0392b;background:#c0392b}
+.msg.show{display:block}
+.statut{font-size:0.72rem;color:#8892b0;margin-top:0.5rem}
+.statut.ok{color:#6ee7a3}
 </style>
 </head>
 <body>
 
 <h1>Atelier Audio</h1>
-<p class="sub">Voix · Musique · Chanson · Effets</p>
+<p class="sub">Voix off</p>
 
-<div class="panel" id="keyPanel">
+<div class="panel">
 <div class="lbl">🔑 Token Replicate</div>
-<input type="text" id="rKey" placeholder="Colle ton token (r8_...)" autocomplete="off" spellcheck="false">
-<button class="primary" id="saveKey" style="padding:0.7rem;margin-top:0.5rem">Enregistrer la clé</button>
-<div class="status" id="keyStatus">Aucune clé enregistrée</div>
+<input type="text" id="cle" placeholder="r8_..." autocomplete="off" spellcheck="false">
+<button class="primary" id="btnEnr" style="padding:0.7rem;margin-top:0.5rem">Enregistrer</button>
+<div class="statut" id="statut">Aucune clé</div>
 </div>
 
-<div class="tabs">
-<button class="tab active" data-mod="voice">🎤 Voix</button>
-<button class="tab" data-mod="music">🎵 Musique</button>
-<button class="tab" data-mod="song">🎙️ Chanson</button>
-<button class="tab" data-mod="sfx">🔊 Effets</button>
-</div>
-
-<div class="module active" id="mod-voice">
 <div class="panel">
 <div class="lbl">🎤 Texte à lire</div>
-<textarea id="voiceText" placeholder="Écris le texte à lire"></textarea>
-</div>
-<div class="panel">
-<div class="lbl">🎭 Voix française</div>
-<select id="voiceSelect">
-<option value="female">Féminine</option>
-<option value="male">Masculine</option>
-</select>
-</div>
-<button class="primary" id="btnVoice">Générer la voix</button>
-<div id="voiceResult"></div>
+<textarea id="texte" placeholder="Écris ton texte ici"></textarea>
 </div>
 
-<div class="module" id="mod-music">
-<div class="panel">
-<div class="lbl">🎵 Décris ta musique</div>
-<textarea id="musicPrompt" placeholder="Exemples : hip-hop disco funky"></textarea>
-</div>
-<button class="primary" id="btnMusic">Générer la musique</button>
-<div id="musicResult"></div>
-</div>
+<button class="primary" id="btnGen">Générer la voix</button>
+<div id="resultat"></div>
 
-<div class="module" id="mod-song">
-<div class="panel">
-<div class="lbl">🎙️ Paroles</div>
-<textarea id="songLyrics" placeholder="Écris les paroles"></textarea>
-</div>
-<button class="primary" id="btnSong">Générer la chanson</button>
-<div id="songResult"></div>
-</div>
-
-<div class="module" id="mod-sfx">
-<div class="panel">
-<div class="lbl">🔊 Décris l'effet</div>
-<textarea id="sfxPrompt" placeholder="Exemples : pluie battante"></textarea>
-</div>
-<button class="primary" id="btnSfx">Générer l'effet</button>
-<div id="sfxResult"></div>
-</div>
-
-<div class="toast" id="toast">Message</div>
+<div class="msg" id="msg"></div>
 
 <script>
-function $(id){return document.getElementById(id);}
-function showToast(msg,isError){
-var t=$('toast');
-t.textContent=msg;
-t.className='toast visible'+(isError?' error':'');
-setTimeout(function(){t.classList.remove('visible');},3500);
+var $=function(id){return document.getElementById(id);};
+
+function message(txt,type){
+var m=$('msg');
+m.textContent=txt;
+m.className='msg show '+(type||'');
+setTimeout(function(){m.className='msg';},4000);
 }
-function refreshKey(){
-var k=localStorage.getItem('r_key')||'';
+
+function actualiserStatut(){
+var k=localStorage.getItem('cle_replicate')||'';
 if(k){
-$('keyStatus').textContent='✓ Clé enregistrée ('+k.slice(0,8)+'...)';
-$('keyPanel').classList.add('ok');
-$('rKey').value=k;
+$('statut').textContent='✓ Enregistrée ('+k.slice(0,8)+'...)';
+$('statut').className='statut ok';
+$('cle').value=k;
 }else{
-$('keyStatus').textContent='Aucune clé enregistrée';
-$('keyPanel').classList.remove('ok');
-$('rKey').value='';
+$('statut').textContent='Aucune clé';
+$('statut').className='statut';
+$('cle').value='';
 }
 }
-$('saveKey').addEventListener('click',function(){
-var k=$('rKey').value.trim();
-if(!k){showToast('Colle ta clé',true);return;}
-localStorage.setItem('r_key',k);
-refreshKey();
-showToast('Clé enregistrée ✓');
-});
-document.querySelectorAll('.tab').forEach(function(tab){
-tab.addEventListener('click',function(){
-document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
-document.querySelectorAll('.module').forEach(function(m){m.classList.remove('active');});
-tab.classList.add('active');
-$('mod-'+tab.dataset.mod).classList.add('active');
-});
-});
 
-async function runReplicate(ownerModel,input,resultId,filename){
-var key=localStorage.getItem('r_key');
-if(!key){showToast('Enregistre d\'abord ta clé',true);return;}
-showToast('Envoi à Replicate...');
-try{
-var start=await fetch('https://api.replicate.com/v1/models/'+ownerModel+'/predictions',{
+$('btnEnr').onclick=function(){
+var k=$('cle').value.trim();
+if(!k){message('Colle ta clé','err');return;}
+if(!k.startsWith('r8_')){message('La clé doit commencer par r8_','err');return;}
+localStorage.setItem('cle_replicate',k);
+actualiserStatut();
+message('Clé enregistrée ✓','ok');
+};
+
+$('btnGen').onclick=function(){
+var texte=$('texte').value.trim();
+if(!texte){message('Écris un texte','err');return;}
+var cle=localStorage.getItem('cle_replicate');
+if(!cle){message('Enregistre ta clé d\'abord','err');return;}
+message('Génération en cours...','ok');
+
+fetch('https://api.replicate.com/v1/models/suno-ai/bark/predictions',{
 method:'POST',
-headers:{'Authorization':'Token '+key,'Content-Type':'application/json','Prefer':'wait'},
-body:JSON.stringify({input:input})
+headers:{
+'Authorization':'Token '+cle,
+'Content-Type':'application/json'
+},
+body:JSON.stringify({
+input:{prompt:texte,history_prompt:'v2/fr_speaker_0'}
+})
+})
+.then(function(r){
+if(!r.ok){
+return r.text().then(function(t){throw new Error('HTTP '+r.status+' : '+t.slice(0,100));});
+}
+return r.json();
+})
+.then(function(pred){
+var getUrl=pred.urls.get;
+var tentatives=0;
+function attendre(){
+tentatives++;
+if(tentatives>60){message('Délai dépassé','err');return;}
+fetch(getUrl,{headers:{'Authorization':'Token '+cle}})
+.then(function(r){return r.json();})
+.then(function(p){
+if(p.status==='succeeded'){
+var audio=p.output;
+if(Array.isArray(audio))audio=audio[0];
+$('resultat').innerHTML='<div class="result"><audio controls src="'+audio+'"></audio><br><a href="'+audio+'" download="voix.wav">⬇️ Télécharger</a></div>';
+message('Voix générée ✓','ok');
+}else if(p.status==='failed'){
+message('Échec : '+(p.error||'inconnu'),'err');
+}else{
+message('Traitement... '+tentatives+'/60','ok');
+setTimeout(attendre,3000);
+}
 });
-if(!start.ok){var t=await start.text();throw new Error(start.status+' - '+t.slice(0,150));}
-var pred=await start.json();
-var id=pred.id;
-var url=pred.urls&&pred.urls.get;
-var attempts=0;
-while((pred.status==='starting'||pred.status==='processing')&&attempts<60){
-await new Promise(r=>setTimeout(r,3000));
-var poll=await fetch(url,{headers:{'Authorization':'Token '+key}});
-pred=await poll.json();
-attempts++;
-showToast('Traitement... '+attempts+'/60');
 }
-if(pred.status!=='succeeded'){throw new Error('Statut: '+pred.status);}
-var output=pred.output;
-var audioUrl=Array.isArray(output)?output[0]:output;
-if(typeof audioUrl!=='string'){throw new Error('Pas d\'audio reçu');}
-$ (resultId).innerHTML='<div class="audio-result"><audio controls src="'+audioUrl+'"></audio><a href="'+audioUrl+'" download="'+filename+'" target="_blank">⬇️ Télécharger</a></div>';
-showToast('Généré ✓');
-}catch(e){showToast('Erreur : '+e.message,true);}
-}
+setTimeout(attendre,3000);
+})
+.catch(function(e){message('Erreur : '+e.message,'err');});
+};
 
-$('btnVoice').addEventListener('click',function(){
-var text=$('voiceText').value.trim();
-if(!text){showToast('Écris un texte',true);return;}
-runReplicate('suno-ai/bark',{prompt:text,history_prompt:'v2/fr_speaker_0'},'voiceResult','voix.wav');
-});
-$('btnMusic').addEventListener('click',function(){
-var p=$('musicPrompt').value.trim();
-if(!p){showToast('Décris ta musique',true);return;}
-runReplicate('meta/musicgen',{prompt:p,duration:10,model_version:'stereo-large'},'musicResult','musique.wav');
-});
-$('btnSong').addEventListener('click',function(){
-var l=$('songLyrics').value.trim();
-if(!l){showToast('Écris des paroles',true);return;}
-runReplicate('meta/musicgen',{prompt:l,duration:15,model_version:'stereo-large'},'songResult','chanson.wav');
-});
-$('btnSfx').addEventListener('click',function(){
-var p=$('sfxPrompt').value.trim();
-if(!p){showToast('Décris l\'effet',true);return;}
-runReplicate('meta/audiogen',{prompt:p,duration:8},'sfxResult','effet.wav');
-});
-refreshKey();
+actualiserStatut();
 </script>
 </body>
 </html>
