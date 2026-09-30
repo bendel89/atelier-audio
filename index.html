@@ -139,7 +139,7 @@ var key=localStorage.getItem('hf_key');
 if(!key){showToast('Enregistre d\'abord ta clé',true);return;}
 showToast('Génération en cours...');
 var url='https://api-inference.huggingface.co/models/'+model;
-var proxy='https://corsproxy.io/?'+encodeURIComponent(url);
+var proxy='https://api.allorigins.win/raw?url='+encodeURIComponent(url);
 fetch(proxy,{
 method:'POST',
 headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
