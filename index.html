@@ -9,128 +9,212 @@
 body{font-family:-apple-system,sans-serif;background:#0a0e1a;color:#e8ecf8;min-height:100vh;padding:1rem;font-size:15px;line-height:1.5;max-width:900px;margin:0 auto}
 h1{text-align:center;font-size:1.5rem;margin-bottom:0.3rem;background:linear-gradient(135deg,#4a9eff,#7c5cff,#d94aff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .sub{text-align:center;font-size:0.82rem;color:#8892b0;margin-bottom:1rem}
+.tabs{display:flex;gap:0.3rem;background:#131829;border:1px solid #2a3350;border-radius:12px;padding:0.3rem;margin-bottom:1rem}
+.tab{flex:1;padding:0.75rem;border-radius:9px;background:transparent;color:#8892b0;border:none;font-family:inherit;font-size:0.75rem;font-weight:600;cursor:pointer}
+.tab.active{background:linear-gradient(135deg,#4a9eff,#7c5cff);color:#fff}
+.module{display:none}
+.module.active{display:block}
 .panel{background:#131829;border:1px solid #2a3350;border-radius:12px;padding:1rem;margin-bottom:1rem}
 .lbl{font-size:0.7rem;color:#8892b0;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:0.6rem}
-textarea,input{width:100%;padding:0.85rem;border-radius:10px;border:1px solid #2a3350;background:#1a2036;color:#e8ecf8;font-family:inherit;font-size:0.9rem}
-textarea{min-height:100px}
+textarea,select{width:100%;padding:0.85rem;border-radius:10px;border:1px solid #2a3350;background:#1a2036;color:#e8ecf8;font-family:inherit;font-size:0.9rem}
+textarea{min-height:120px;line-height:1.5}
+textarea:focus,select:focus{outline:none;border-color:#4a9eff}
 button.primary{width:100%;padding:1rem;border-radius:12px;border:none;background:linear-gradient(135deg,#4a9eff,#7c5cff);color:#fff;font-size:1rem;font-weight:600;font-family:inherit;cursor:pointer;margin-bottom:1rem}
-button.primary:disabled{opacity:0.35}
-.result{margin-top:1rem;padding:1rem;background:#131829;border:1px solid #2d8a4e;border-radius:12px}
-.result audio{width:100%}
-.result a{color:#4a9eff;font-size:0.8rem}
-.msg{position:fixed;top:1rem;left:50%;transform:translateX(-50%);background:#131829;color:#fff;padding:0.9rem 1.4rem;border-radius:12px;font-size:0.85rem;border:1px solid #2a3350;z-index:1000;max-width:90vw;text-align:center;display:none}
-.msg.ok{border-color:#2d8a4e}
-.msg.err{border-color:#c0392b;background:#c0392b}
-.msg.show{display:block}
-.statut{font-size:0.72rem;color:#8892b0;margin-top:0.5rem}
-.statut.ok{color:#6ee7a3}
+button.primary:active{transform:scale(0.98)}
+button.primary:disabled{opacity:0.4;cursor:not-allowed}
+button.secondary{width:100%;padding:1rem;border-radius:12px;border:1px solid #2a3350;background:#1a2036;color:#e8ecf8;font-size:1rem;font-weight:600;font-family:inherit;cursor:pointer;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.8rem;justify-content:flex-start}
+button.secondary .emoji{font-size:1.5rem}
+button.secondary .info{text-align:left;flex:1}
+button.secondary .info .t{font-size:0.95rem;font-weight:600}
+button.secondary .info .d{font-size:0.72rem;color:#8892b0;margin-top:0.15rem}
+button.secondary:active{transform:scale(0.98);border-color:#4a9eff}
+.controls{margin-top:0.8rem;display:flex;gap:0.4rem}
+.controls button{flex:1;padding:0.6rem;border-radius:8px;border:1px solid #2a3350;background:#1a2036;color:#e8ecf8;font-family:inherit;font-size:0.8rem;cursor:pointer}
+.controls button:active{background:#2a3350}
+.statut{padding:0.7rem;border-radius:8px;background:#1a2036;font-size:0.8rem;color:#8892b0;text-align:center;margin-top:0.5rem}
+.statut.playing{background:rgba(74,158,255,0.15);color:#4a9eff}
+.hint{font-size:0.72rem;color:#8892b0;margin-top:0.6rem;line-height:1.45}
 </style>
 </head>
 <body>
 
 <h1>Atelier Audio</h1>
-<p class="sub">Voix off</p>
+<p class="sub">Voix · Musique · Effets</p>
 
-<div class="panel">
-<div class="lbl">🔑 Token Replicate</div>
-<input type="text" id="cle" placeholder="r8_..." autocomplete="off" spellcheck="false">
-<button class="primary" id="btnEnr" style="padding:0.7rem;margin-top:0.5rem">Enregistrer</button>
-<div class="statut" id="statut">Aucune clé</div>
+<div class="tabs">
+<button class="tab active" data-mod="voice">🎤 Voix off</button>
+<button class="tab" data-mod="music">🎵 Musique</button>
+<button class="tab" data-mod="sfx">🔊 Effets</button>
 </div>
 
+<div class="module active" id="mod-voice">
 <div class="panel">
 <div class="lbl">🎤 Texte à lire</div>
-<textarea id="texte" placeholder="Écris ton texte ici"></textarea>
+<textarea id="voiceText" placeholder="Écris ici le texte que tu veux entendre. L'iPhone va le lire avec une voix française.">Bonjour, je teste mon Atelier Audio. Cette voix est générée directement par mon iPhone.</textarea>
+</div>
+<div class="panel">
+<div class="lbl">🎭 Voix</div>
+<select id="voiceSelect">
+<option value="fr-FR">Français (par défaut)</option>
+<option value="fr-CA">Français canadien</option>
+<option value="en-US">Anglais américain</option>
+<option value="en-GB">Anglais britannique</option>
+<option value="es-ES">Espagnol</option>
+<option value="de-DE">Allemand</option>
+<option value="it-IT">Italien</option>
+</select>
+</div>
+<button class="primary" id="btnPlay">▶️ Lire le texte</button>
+<div class="controls">
+<button id="btnPause">⏸ Pause</button>
+<button id="btnResume">▶ Reprendre</button>
+<button id="btnStop">⏹ Arrêter</button>
+</div>
+<div class="statut" id="voiceStatus">Prêt</div>
+<div class="hint">💡 Astuce : tu peux enregistrer la lecture avec l'app Dictaphone (en haut de ton écran d'accueil) pour créer un fichier audio.</div>
 </div>
 
-<button class="primary" id="btnGen">Générer la voix</button>
-<div id="resultat"></div>
+<div class="module" id="mod-music">
+<div class="panel">
+<div class="lbl">🎵 Créer une musique</div>
+<div class="hint" style="margin-bottom:1rem">Suno génère 10 chansons gratuites par jour, avec voix et musique, dans tous les styles (hip-hop, disco, électro…).</div>
+<button class="secondary" id="btnSuno">
+<span class="emoji">🎵</span>
+<span class="info">
+<span class="t">Ouvrir Suno</span>
+<span class="d">Créer une chanson complète</span>
+</span>
+</button>
+</div>
+<div class="panel">
+<div class="lbl">📋 Prompts prêts à copier</div>
+<textarea id="sunoPrompt1" readonly>hip-hop, disco, funky, energique, beat puissant, basses profondes, années 80, synthétiseurs, cuivres, groove, dancefloor</textarea>
+<button class="controls" style="padding:0;border:none;background:none">
+<button class="copyBtn" data-target="sunoPrompt1">📋 Copier ce prompt</button>
+</button>
+</div>
+</div>
 
-<div class="msg" id="msg"></div>
+<div class="module" id="mod-sfx">
+<div class="panel">
+<div class="lbl">🔊 Effets sonores gratuits</div>
+<div class="hint" style="margin-bottom:1rem">Pixabay propose plus de 110 000 effets sonores gratuits (pluie, tonnerre, pas dans la neige, feu de camp…).</div>
+<button class="secondary" id="btnPixabay">
+<span class="emoji">🔊</span>
+<span class="info">
+<span class="t">Ouvrir Pixabay Effets</span>
+<span class="d">Télécharger des effets sonores</span>
+</span>
+</button>
+</div>
+<div class="panel">
+<div class="lbl">🔍 Recherches populaires</div>
+<button class="secondary" data-search="pluie">
+<span class="emoji">🌧️</span>
+<span class="info"><span class="t">Pluie</span><span class="d">Pluie battante, averse</span></span>
+</button>
+<button class="secondary" data-search="tonnerre">
+<span class="emoji">⛈️</span>
+<span class="info"><span class="t">Tonnerre</span><span class="d">Orage, éclairs</span></span>
+</button>
+<button class="secondary" data-search="feu">
+<span class="emoji">🔥</span>
+<span class="info"><span class="t">Feu de camp</span><span class="d">Crépitement, flammes</span></span>
+</button>
+<button class="secondary" data-search="foret">
+<span class="emoji">🌲</span>
+<span class="info"><span class="t">Forêt</span><span class="d">Oiseaux, vent dans les arbres</span></span>
+</button>
+<button class="secondary" data-search="ville">
+<span class="emoji">🏙️</span>
+<span class="info"><span class="t">Ville</span><span class="d">Circulation, ambiance urbaine</span></span>
+</button>
+</div>
+</div>
 
 <script>
 var $=function(id){return document.getElementById(id);};
 
-function message(txt,type){
-var m=$('msg');
-m.textContent=txt;
-m.className='msg show '+(type||'');
-setTimeout(function(){m.className='msg';},4000);
-}
-
-function actualiserStatut(){
-var k=localStorage.getItem('cle_replicate')||'';
-if(k){
-$('statut').textContent='✓ Enregistrée ('+k.slice(0,8)+'...)';
-$('statut').className='statut ok';
-$('cle').value=k;
-}else{
-$('statut').textContent='Aucune clé';
-$('statut').className='statut';
-$('cle').value='';
-}
-}
-
-$('btnEnr').onclick=function(){
-var k=$('cle').value.trim();
-if(!k){message('Colle ta clé','err');return;}
-if(!k.startsWith('r8_')){message('La clé doit commencer par r8_','err');return;}
-localStorage.setItem('cle_replicate',k);
-actualiserStatut();
-message('Clé enregistrée ✓','ok');
-};
-
-$('btnGen').onclick=function(){
-var texte=$('texte').value.trim();
-if(!texte){message('Écris un texte','err');return;}
-var cle=localStorage.getItem('cle_replicate');
-if(!cle){message('Enregistre ta clé d\'abord','err');return;}
-message('Génération en cours...','ok');
-
-fetch('https://api.replicate.com/v1/models/suno-ai/bark/predictions',{
-method:'POST',
-headers:{
-'Authorization':'Token '+cle,
-'Content-Type':'application/json'
-},
-body:JSON.stringify({
-input:{prompt:texte,history_prompt:'v2/fr_speaker_0'}
-})
-})
-.then(function(r){
-if(!r.ok){
-return r.text().then(function(t){throw new Error('HTTP '+r.status+' : '+t.slice(0,100));});
-}
-return r.json();
-})
-.then(function(pred){
-var getUrl=pred.urls.get;
-var tentatives=0;
-function attendre(){
-tentatives++;
-if(tentatives>60){message('Délai dépassé','err');return;}
-fetch(getUrl,{headers:{'Authorization':'Token '+cle}})
-.then(function(r){return r.json();})
-.then(function(p){
-if(p.status==='succeeded'){
-var audio=p.output;
-if(Array.isArray(audio))audio=audio[0];
-$('resultat').innerHTML='<div class="result"><audio controls src="'+audio+'"></audio><br><a href="'+audio+'" download="voix.wav">⬇️ Télécharger</a></div>';
-message('Voix générée ✓','ok');
-}else if(p.status==='failed'){
-message('Échec : '+(p.error||'inconnu'),'err');
-}else{
-message('Traitement... '+tentatives+'/60','ok');
-setTimeout(attendre,3000);
-}
+document.querySelectorAll('.tab').forEach(function(tab){
+tab.addEventListener('click',function(){
+document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+document.querySelectorAll('.module').forEach(function(m){m.classList.remove('active');});
+tab.classList.add('active');
+$('mod-'+tab.dataset.mod).classList.add('active');
 });
-}
-setTimeout(attendre,3000);
-})
-.catch(function(e){message('Erreur : '+e.message,'err');});
-};
+});
 
-actualiserStatut();
+var utterance=null;
+
+function setVoiceStatus(txt,playing){
+var s=$('voiceStatus');
+s.textContent=txt;
+s.className='statut'+(playing?' playing':'');
+}
+
+function playVoice(){
+if(!('speechSynthesis' in window)){setVoiceStatus('Non supporté par ce navigateur');return;}
+speechSynthesis.cancel();
+var text=$('voiceText').value.trim();
+if(!text){setVoiceStatus('Écris un texte');return;}
+utterance=new SpeechSynthesisUtterance(text);
+var lang=$('voiceSelect').value;
+utterance.lang=lang;
+var voices=speechSynthesis.getVoices();
+var match=voices.find(function(v){return v.lang===lang;})
+||voices.find(function(v){return v.lang.startsWith(lang.split('-')[0]);});
+if(match)utterance.voice=match;
+utterance.rate=1;
+utterance.pitch=1;
+utterance.onstart=function(){setVoiceStatus('Lecture en cours…',true);};
+utterance.onend=function(){setVoiceStatus('Terminé ✓');};
+utterance.onerror=function(e){setVoiceStatus('Erreur : '+e.error);};
+speechSynthesis.speak(utterance);
+}
+
+$('btnPlay').addEventListener('click',playVoice);
+$('btnPause').addEventListener('click',function(){
+if(speechSynthesis.speaking)speechSynthesis.pause();
+});
+$('btnResume').addEventListener('click',function(){
+if(speechSynthesis.paused)speechSynthesis.resume();
+});
+$('btnStop').addEventListener('click',function(){
+speechSynthesis.cancel();
+setVoiceStatus('Arrêté');
+});
+
+if('speechSynthesis' in window){
+speechSynthesis.onvoiceschanged=function(){};
+}
+
+$('btnSuno').addEventListener('click',function(){
+window.open('https://suno.com/create','_blank');
+});
+
+$('btnPixabay').addEventListener('click',function(){
+window.open('https://pixabay.com/sound-effects/','_blank');
+});
+
+document.querySelectorAll('[data-search]').forEach(function(btn){
+btn.addEventListener('click',function(){
+window.open('https://pixabay.com/sound-effects/search/'+btn.dataset.search+'/','_blank');
+});
+});
+
+document.querySelectorAll('.copyBtn').forEach(function(btn){
+btn.addEventListener('click',function(){
+var el=$(btn.dataset.target);
+if(!el)return;
+el.select();
+el.setSelectionRange(0,99999);
+try{
+navigator.clipboard.writeText(el.value);
+btn.textContent='✓ Copié';
+setTimeout(function(){btn.textContent='📋 Copier ce prompt';},1500);
+}catch(e){}
+});
+});
 </script>
 </body>
 </html>
