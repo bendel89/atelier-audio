@@ -165,7 +165,7 @@ showToast('Généré ✓');
 $('btnVoice').addEventListener('click',function(){
 var text=$('voiceText').value.trim();
 if(!text){showToast('Écris un texte',true);return;}
-runReplicate('lucataco/xtts-v2',{text:text,language:'fr',speaker:'https://replicate.delivery/pbxt/Jt79w0xsT64R1JsiJ0Lp3fDksfti1NJoJm1N1AY3OT5y0s1P/sample.wav'},'voiceResult','voix.wav');
+runReplicate('suno-ai/bark',{prompt:text,history_prompt:'v2/fr_speaker_0'},'voiceResult','voix.wav');
 });
 $('btnMusic').addEventListener('click',function(){
 var p=$('musicPrompt').value.trim();
