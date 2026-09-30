@@ -10,6 +10,7 @@ body{font-family:-apple-system,sans-serif;background:#0a0e1a;color:#e8ecf8;min-h
 h1{text-align:center;font-size:1.5rem;margin-bottom:0.3rem;background:linear-gradient(135deg,#4a9eff,#7c5cff,#d94aff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .sub{text-align:center;font-size:0.82rem;color:#8892b0;margin-bottom:1rem}
 .panel{background:#131829;border:1px solid #2a3350;border-radius:12px;padding:1rem;margin-bottom:1rem}
+.panel.ok{border-color:#2d8a4e}
 .lbl{font-size:0.7rem;color:#8892b0;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:0.6rem}
 textarea,input{width:100%;padding:0.85rem;border-radius:10px;border:1px solid #2a3350;background:#1a2036;color:#e8ecf8;font-family:inherit;font-size:0.9rem}
 textarea{min-height:100px}
@@ -24,8 +25,10 @@ button.primary:disabled{opacity:0.35}
 .audio-result{margin-top:1rem;padding:1rem;background:#131829;border:1px solid #2d8a4e;border-radius:12px}
 .audio-result audio{width:100%;margin-bottom:0.5rem}
 .audio-result a{color:#4a9eff;text-decoration:underline;font-size:0.8rem}
-.toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%);background:#2d8a4e;color:#fff;padding:0.9rem 1.4rem;border-radius:12px;font-size:0.85rem;z-index:1000;display:none}
+.toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%);background:#2d8a4e;color:#fff;padding:0.9rem 1.4rem;border-radius:12px;font-size:0.85rem;z-index:1000;display:none;max-width:90vw;text-align:center}
+.toast.error{background:#c0392b}
 .toast.visible{display:block}
+.status{font-size:0.72rem;color:#6ee7a3;margin-top:0.5rem}
 </style>
 </head>
 <body>
@@ -33,10 +36,11 @@ button.primary:disabled{opacity:0.35}
 <h1>Atelier Audio</h1>
 <p class="sub">Voix · Musique · Chanson · Effets</p>
 
-<div class="panel">
+<div class="panel" id="keyPanel">
 <div class="lbl">🔑 Token Hugging Face</div>
-<input type="password" id="hfKey" placeholder="hf_...">
-<div style="font-size:0.7rem;color:#6ee7a3;margin-top:0.5rem">✓ Enregistrement automatique</div>
+<input type="text" id="hfKey" placeholder="Colle ton token ici (hf_...)" autocomplete="off" spellcheck="false">
+<button class="primary" id="saveKey" style="padding:0.7rem;margin-top:0.5rem">Enregistrer la clé</button>
+<div class="status" id="keyStatus">Aucune clé enregistrée</div>
 </div>
 
 <div class="tabs">
@@ -49,7 +53,14 @@ button.primary:disabled{opacity:0.35}
 <div class="module active" id="mod-voice">
 <div class="panel">
 <div class="lbl">🎤 Texte à lire</div>
-<textarea id="voiceText" placeholder="Écris ici le texte à lire"></textarea>
+<textarea id="voiceText" placeholder="Écris le texte à lire"></textarea>
+</div>
+<div class="panel">
+<div class="lbl">🎭 Voix française</div>
+<select id="voiceSelect">
+<option value="female">Féminine</option>
+<option value="male">Masculine</option>
+</select>
 </div>
 <button class="primary" id="btnVoice">Générer la voix</button>
 <div id="voiceResult"></div>
@@ -86,17 +97,32 @@ button.primary:disabled{opacity:0.35}
 
 <script>
 function $(id){return document.getElementById(id);}
-function showToast(msg){
+function showToast(msg,isError){
 var t=$('toast');
 t.textContent=msg;
-t.classList.add('visible');
+t.className='toast visible'+(isError?' error':'');
 setTimeout(function(){t.classList.remove('visible');},3000);
 }
 
-var hfInput=$('hfKey');
-hfInput.value=localStorage.getItem('hf_key')||'';
-hfInput.addEventListener('input',function(){
-localStorage.setItem('hf_key',hfInput.value.trim());
+function refreshKeyStatus(){
+var k=localStorage.getItem('hf_key')||'';
+if(k){
+$('keyStatus').textContent='✓ Clé enregistrée ('+k.slice(0,6)+'...)';
+$('keyPanel').classList.add('ok');
+$('hfKey').value=k;
+}else{
+$('keyStatus').textContent='Aucune clé enregistrée';
+$('keyPanel').classList.remove('ok');
+$('hfKey').value='';
+}
+}
+
+$('saveKey').addEventListener('click',function(){
+var k=$('hfKey').value.trim();
+if(!k){showToast('Colle d\'abord ta clé',true);return;}
+localStorage.setItem('hf_key',k);
+refreshKeyStatus();
+showToast('Clé enregistrée ✓');
 });
 
 document.querySelectorAll('.tab').forEach(function(tab){
@@ -108,17 +134,19 @@ $('mod-'+tab.dataset.mod).classList.add('active');
 });
 });
 
-function hfFetch(url,body,resultId,filename){
+function hfFetch(model,body,resultId,filename){
 var key=localStorage.getItem('hf_key');
-if(!key){showToast('Entre ton token HF en haut');return;}
+if(!key){showToast('Enregistre d\'abord ta clé',true);return;}
 showToast('Génération en cours...');
-fetch('https://corsproxy.io/?'+encodeURIComponent(url),{
+var url='https://api-inference.huggingface.co/models/'+model;
+var proxy='https://corsproxy.io/?'+encodeURIComponent(url);
+fetch(proxy,{
 method:'POST',
 headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
 body:JSON.stringify(body)
 })
 .then(function(r){
-if(!r.ok){return r.text().then(function(t){throw new Error(r.status+': '+t.slice(0,100));});}
+if(!r.ok){return r.text().then(function(t){throw new Error(r.status+' - '+t.slice(0,120));});}
 return r.blob();
 })
 .then(function(blob){
@@ -126,32 +154,36 @@ var u=URL.createObjectURL(blob);
 $(resultId).innerHTML='<div class="audio-result"><audio controls src="'+u+'"></audio><a href="'+u+'" download="'+filename+'">⬇️ Télécharger</a></div>';
 showToast('Généré ✓');
 })
-.catch(function(e){showToast('Erreur : '+e.message);});
+.catch(function(e){showToast('Erreur : '+e.message,true);});
 }
 
 $('btnVoice').addEventListener('click',function(){
 var text=$('voiceText').value.trim();
-if(!text){showToast('Écris un texte');return;}
-hfFetch('https://api-inference.huggingface.co/models/facebook/mms-tts-fra',{inputs:text},'voiceResult','voix.wav');
+if(!text){showToast('Écris un texte',true);return;}
+var voice=$('voiceSelect').value;
+var model=voice==='female'?'facebook/mms-tts-fra':'facebook/mms-tts-fra';
+hfFetch(model,{inputs:text},'voiceResult','voix.wav');
 });
 
 $('btnMusic').addEventListener('click',function(){
 var p=$('musicPrompt').value.trim();
-if(!p){showToast('Décris ta musique');return;}
-hfFetch('https://api-inference.huggingface.co/models/facebook/musicgen-small',{inputs:p,parameters:{max_new_tokens:250}},'musicResult','musique.wav');
+if(!p){showToast('Décris ta musique',true);return;}
+hfFetch('facebook/musicgen-small',{inputs:p,parameters:{max_new_tokens:250}},'musicResult','musique.wav');
 });
 
 $('btnSong').addEventListener('click',function(){
 var l=$('songLyrics').value.trim();
-if(!l){showToast('Écris des paroles');return;}
-hfFetch('https://api-inference.huggingface.co/models/facebook/musicgen-small',{inputs:l,parameters:{max_new_tokens:400}},'songResult','chanson.wav');
+if(!l){showToast('Écris des paroles',true);return;}
+hfFetch('facebook/musicgen-small',{inputs:l,parameters:{max_new_tokens:400}},'songResult','chanson.wav');
 });
 
 $('btnSfx').addEventListener('click',function(){
 var p=$('sfxPrompt').value.trim();
-if(!p){showToast('Décris l\'effet');return;}
-hfFetch('https://api-inference.huggingface.co/models/facebook/audiogen-medium',{inputs:p,parameters:{max_new_tokens:200}},'sfxResult','effet.wav');
+if(!p){showToast('Décris l\'effet',true);return;}
+hfFetch('facebook/audiogen-medium',{inputs:p,parameters:{max_new_tokens:200}},'sfxResult','effet.wav');
 });
+
+refreshKeyStatus();
 </script>
 </body>
 </html>
