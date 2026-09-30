@@ -18,7 +18,7 @@ select{width:100%;padding:0.85rem;border-radius:10px;border:1px solid #2a3350;ba
 button.primary{width:100%;padding:1rem;border-radius:12px;border:none;background:linear-gradient(135deg,#4a9eff,#7c5cff);color:#fff;font-size:1rem;font-weight:600;font-family:inherit;cursor:pointer;margin-bottom:1rem}
 button.primary:disabled{opacity:0.35}
 .tabs{display:flex;gap:0.3rem;background:#131829;border:1px solid #2a3350;border-radius:12px;padding:0.3rem;margin-bottom:1rem}
-.tab{flex:1;padding:0.7rem;border-radius:9px;background:transparent;color:#8892b0;border:none;font-family:inherit;font-size:0.75rem;font-weight:600;cursor:pointer}
+.tab{flex:1;padding:0.7rem;border-radius:9px;background:transparent;color:#8892b0;border:none;font-family:inherit;font-size:0.72rem;font-weight:600;cursor:pointer}
 .tab.active{background:linear-gradient(135deg,#4a9eff,#7c5cff);color:#fff}
 .module{display:none}
 .module.active{display:block}
@@ -37,8 +37,8 @@ button.primary:disabled{opacity:0.35}
 <p class="sub">Voix · Musique · Chanson · Effets</p>
 
 <div class="panel" id="keyPanel">
-<div class="lbl">🔑 Token Hugging Face</div>
-<input type="text" id="hfKey" placeholder="Colle ton token ici (hf_...)" autocomplete="off" spellcheck="false">
+<div class="lbl">🔑 Token Replicate</div>
+<input type="text" id="rKey" placeholder="Colle ton token (r8_...)" autocomplete="off" spellcheck="false">
 <button class="primary" id="saveKey" style="padding:0.7rem;margin-top:0.5rem">Enregistrer la clé</button>
 <div class="status" id="keyStatus">Aucune clé enregistrée</div>
 </div>
@@ -101,30 +101,27 @@ function showToast(msg,isError){
 var t=$('toast');
 t.textContent=msg;
 t.className='toast visible'+(isError?' error':'');
-setTimeout(function(){t.classList.remove('visible');},3000);
+setTimeout(function(){t.classList.remove('visible');},3500);
 }
-
-function refreshKeyStatus(){
-var k=localStorage.getItem('hf_key')||'';
+function refreshKey(){
+var k=localStorage.getItem('r_key')||'';
 if(k){
-$('keyStatus').textContent='✓ Clé enregistrée ('+k.slice(0,6)+'...)';
+$('keyStatus').textContent='✓ Clé enregistrée ('+k.slice(0,8)+'...)';
 $('keyPanel').classList.add('ok');
-$('hfKey').value=k;
+$('rKey').value=k;
 }else{
 $('keyStatus').textContent='Aucune clé enregistrée';
 $('keyPanel').classList.remove('ok');
-$('hfKey').value='';
+$('rKey').value='';
 }
 }
-
 $('saveKey').addEventListener('click',function(){
-var k=$('hfKey').value.trim();
-if(!k){showToast('Colle d\'abord ta clé',true);return;}
-localStorage.setItem('hf_key',k);
-refreshKeyStatus();
+var k=$('rKey').value.trim();
+if(!k){showToast('Colle ta clé',true);return;}
+localStorage.setItem('r_key',k);
+refreshKey();
 showToast('Clé enregistrée ✓');
 });
-
 document.querySelectorAll('.tab').forEach(function(tab){
 tab.addEventListener('click',function(){
 document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
@@ -134,56 +131,58 @@ $('mod-'+tab.dataset.mod).classList.add('active');
 });
 });
 
-function hfFetch(model,body,resultId,filename){
-var key=localStorage.getItem('hf_key');
+async function runReplicate(ownerModel,input,resultId,filename){
+var key=localStorage.getItem('r_key');
 if(!key){showToast('Enregistre d\'abord ta clé',true);return;}
-showToast('Génération en cours...');
-var url='https://api-inference.huggingface.co/models/'+model;
-var proxy='https://api.allorigins.win/raw?url='+encodeURIComponent(url);
-fetch(proxy,{
+showToast('Envoi à Replicate...');
+try{
+var start=await fetch('https://api.replicate.com/v1/models/'+ownerModel+'/predictions',{
 method:'POST',
-headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-body:JSON.stringify(body)
-})
-.then(function(r){
-if(!r.ok){return r.text().then(function(t){throw new Error(r.status+' - '+t.slice(0,120));});}
-return r.blob();
-})
-.then(function(blob){
-var u=URL.createObjectURL(blob);
-$(resultId).innerHTML='<div class="audio-result"><audio controls src="'+u+'"></audio><a href="'+u+'" download="'+filename+'">⬇️ Télécharger</a></div>';
+headers:{'Authorization':'Token '+key,'Content-Type':'application/json','Prefer':'wait'},
+body:JSON.stringify({input:input})
+});
+if(!start.ok){var t=await start.text();throw new Error(start.status+' - '+t.slice(0,150));}
+var pred=await start.json();
+var id=pred.id;
+var url=pred.urls&&pred.urls.get;
+var attempts=0;
+while((pred.status==='starting'||pred.status==='processing')&&attempts<60){
+await new Promise(r=>setTimeout(r,3000));
+var poll=await fetch(url,{headers:{'Authorization':'Token '+key}});
+pred=await poll.json();
+attempts++;
+showToast('Traitement... '+attempts+'/60');
+}
+if(pred.status!=='succeeded'){throw new Error('Statut: '+pred.status);}
+var output=pred.output;
+var audioUrl=Array.isArray(output)?output[0]:output;
+if(typeof audioUrl!=='string'){throw new Error('Pas d\'audio reçu');}
+$ (resultId).innerHTML='<div class="audio-result"><audio controls src="'+audioUrl+'"></audio><a href="'+audioUrl+'" download="'+filename+'" target="_blank">⬇️ Télécharger</a></div>';
 showToast('Généré ✓');
-})
-.catch(function(e){showToast('Erreur : '+e.message,true);});
+}catch(e){showToast('Erreur : '+e.message,true);}
 }
 
 $('btnVoice').addEventListener('click',function(){
 var text=$('voiceText').value.trim();
 if(!text){showToast('Écris un texte',true);return;}
-var voice=$('voiceSelect').value;
-var model=voice==='female'?'facebook/mms-tts-fra':'facebook/mms-tts-fra';
-hfFetch(model,{inputs:text},'voiceResult','voix.wav');
+runReplicate('lucataco/xtts-v2',{text:text,language:'fr',speaker:'https://replicate.delivery/pbxt/Jt79w0xsT64R1JsiJ0Lp3fDksfti1NJoJm1N1AY3OT5y0s1P/sample.wav'},'voiceResult','voix.wav');
 });
-
 $('btnMusic').addEventListener('click',function(){
 var p=$('musicPrompt').value.trim();
 if(!p){showToast('Décris ta musique',true);return;}
-hfFetch('facebook/musicgen-small',{inputs:p,parameters:{max_new_tokens:250}},'musicResult','musique.wav');
+runReplicate('meta/musicgen',{prompt:p,duration:10,model_version:'stereo-large'},'musicResult','musique.wav');
 });
-
 $('btnSong').addEventListener('click',function(){
 var l=$('songLyrics').value.trim();
 if(!l){showToast('Écris des paroles',true);return;}
-hfFetch('facebook/musicgen-small',{inputs:l,parameters:{max_new_tokens:400}},'songResult','chanson.wav');
+runReplicate('meta/musicgen',{prompt:l,duration:15,model_version:'stereo-large'},'songResult','chanson.wav');
 });
-
 $('btnSfx').addEventListener('click',function(){
 var p=$('sfxPrompt').value.trim();
 if(!p){showToast('Décris l\'effet',true);return;}
-hfFetch('facebook/audiogen-medium',{inputs:p,parameters:{max_new_tokens:200}},'sfxResult','effet.wav');
+runReplicate('meta/audiogen',{prompt:p,duration:8},'sfxResult','effet.wav');
 });
-
-refreshKeyStatus();
+refreshKey();
 </script>
 </body>
 </html>
